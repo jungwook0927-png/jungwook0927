@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { submitLead, type SubmitLeadState } from "./actions";
 
 function PlaceIcon() {
   return (
@@ -116,9 +117,31 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<SubmitLeadState | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
+    setResult(null);
+
+    try {
+      const res = await submitLead({ name, email, phone, message });
+      setResult(res);
+      if (res.status === "success") {
+        setName("");
+        setEmail("");
+        setPhone("");
+        setMessage("");
+      }
+    } catch {
+      setResult({
+        status: "error",
+        message: "제출 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -270,11 +293,26 @@ export default function Home() {
               />
             </div>
 
+            {result && (
+              <p
+                className={`text-sm ${
+                  result.status === "success"
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+              >
+                {result.status === "success"
+                  ? "문의가 정상적으로 접수되었습니다. 감사합니다!"
+                  : result.message ?? "제출 중 오류가 발생했습니다."}
+              </p>
+            )}
+
             <button
               type="submit"
-              className="mt-2 h-11 w-full rounded-md bg-foreground text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+              disabled={submitting}
+              className="mt-2 h-11 w-full rounded-md bg-foreground text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-[#ccc]"
             >
-              제출하기
+              {submitting ? "제출 중..." : "제출하기"}
             </button>
           </form>
         </div>
